@@ -25,3 +25,12 @@ def test_transaction_fields_have_correct_types():
         assert isinstance(item["amount"], float)
         assert re.match(r"\d{4}-\d{2}-\d{2}", item["date"])
         assert len(item["description"]) > 0
+
+def test_missing_file_raises_error():
+    with pytest.raises(FileNotFoundError):
+        parse_kaspi_pdf("nonexistent.pdf")
+
+def test_cyrillic_description_are_readable():
+    result = parse_kaspi_pdf(SAMPLE_PDF)
+    description = [t["description"] for t in result]
+    assert any("ТОО" in d for d in description)
