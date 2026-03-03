@@ -4,3 +4,6 @@ uvicorn
 python-multipart
 pytest
 httpx
+sqlalchemy
+psycopg-binary
+python-dotenv
