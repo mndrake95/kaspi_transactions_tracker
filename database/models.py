@@ -10,7 +10,7 @@ class Upload(Base):
     filename: Mapped[str] = mapped_column(String)
     period_start: Mapped[Date] = mapped_column(Date)
     period_end: Mapped[Date] = mapped_column(Date)
-    uploaded_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+    uploaded_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class Transaction(Base):
     __tablename__ = "transactions"
