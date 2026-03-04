@@ -15,13 +15,22 @@ def insert_transaction(session,
                        category, 
                        amount
                        ):
-    new_transaction = Transaction(upload_id=upload_id,
+    query = session.query(Transaction).filter(Transaction.date == date, 
+                                              Transaction.description == description, 
+                                              Transaction.amount == amount)
+    existing = query.first()
+
+    if existing:
+        return existing
+    
+    else:
+        new_transaction = Transaction(upload_id=upload_id,
                                   date=date,
                                   type=type,
                                   description=description,
                                   category=category,
                                   amount=amount)
-    session.add(new_transaction)
-    session.commit()
-    session.refresh(new_transaction)
-    return new_transaction
+        session.add(new_transaction)
+        session.commit()
+        session.refresh(new_transaction)
+        return new_transaction
