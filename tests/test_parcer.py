@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from parser.kaspi_parser import parse_kaspi_pdf, parse_date, parse_transaction_line, extract_pages, filter_transaction_lines
+from parser.kaspi_parser import parse_kaspi_pdf, parse_date, parse_transaction_line, extract_pages, filter_transaction_lines, parse_amount
 import re
 
 SAMPLE_PDF = Path(__file__).parent.parent/"sample"/"gold_statement.pdf"
@@ -56,3 +56,21 @@ def test_extract_pages():
 def test_filter_transaction_lines():
     result = filter_transaction_lines(["03.03.26 - 1 500,00 ₸ Покупка Some Store", "random text", "Дата Сумма Операция"])
     assert len(result) == 1
+    assert result[0]["amount"] == -1500.0
+    assert result[0]["category"] == "Покупка"
+    
+def test_parse_transaction_line():
+    result = parse_transaction_line("random text")
+    assert result is None
+
+def test_parse_amount_positive():
+    result = parse_amount("1 500,00", "+")
+    assert result == 1500.0
+
+def test_parse_amount_negative():
+    result = parse_amount("1 500,00", "-")
+    assert result == -1500.0
+
+def test_extract_pages_missing_file():
+    with pytest.raises(FileNotFoundError):
+        extract_pages("nonexistent.pdf")

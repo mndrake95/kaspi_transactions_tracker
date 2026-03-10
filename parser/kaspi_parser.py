@@ -3,9 +3,6 @@ import pdfplumber
 import re
 from datetime import datetime
 
-BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-pdf_path = os.path.join(BASE, "sample", "gold_statement.pdf")
-
 pattern = r"(\d{2}\.\d{2}\.\d{2})\s+([+\-])\s+([\d\s]+,\d{2})\s+₸\s+(\S+)\s+(.+)"
 
 
@@ -17,6 +14,8 @@ def extract_pages(filepath):
     with pdfplumber.open(filepath) as pdf:
         for i in pdf.pages:
             text = i.extract_text()
+            if text is None:
+                continue
             lines = text.splitlines()
             list_lines.append(lines)
         return list_lines
@@ -31,18 +30,17 @@ def parse_transaction_line(line):
     match = re.match(pattern, line)
     if match is None:
         return None
-    else: 
-        raw_date = match.group(1)
-        sign = match.group(2)
-        raw_amount = match.group(3)
-        category = match.group(4)
-        description = match.group(5)
-        date = parse_date(raw_date)
-        amount = parse_amount(raw_amount,sign)
-        return {"date": date, 
-                "description": description,
-                "category": category,
-                "amount": amount}
+    raw_date = match.group(1)
+    sign = match.group(2)
+    raw_amount = match.group(3)
+    category = match.group(4)
+    description = match.group(5)
+    date = parse_date(raw_date)
+    amount = parse_amount(raw_amount,sign)
+    return {"date": date, 
+            "description": description,
+            "category": category,
+            "amount": amount}
     
 def filter_transaction_lines(lines):
     return [result for line in lines if (result := parse_transaction_line(line)) is not None]
