@@ -58,8 +58,8 @@ def test_filter_transaction_lines():
     assert len(result) == 1
     assert result[0]["amount"] == -1500.0
     assert result[0]["category"] == "Покупка"
-    
-def test_parse_transaction_line():
+
+def test_parse_transaction_line_non_matching_returns_none():
     result = parse_transaction_line("random text")
     assert result is None
 
