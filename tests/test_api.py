@@ -105,3 +105,17 @@ def test_get_rules_returns_empty_list(client):
     response = client.get("/rules")
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_post_rule_creates_rule(client):
+    response = client.post("/rules", json={"keyword": "YANDEX", "category": "Transport"})
+    assert response.status_code == 200
+    assert response.json()["keyword"] == "YANDEX"
+    assert response.json()["category"] == "Transport"
+    assert isinstance(response.json()["id"], int)
+
+def test_get_rules_returns_created_rules(client):
+    client.post("/rules", json={"keyword": "YANDEX", "category": "Transport"})
+    response = client.get("/rules")
+    assert len(response.json()) == 1
+    assert response.json()[0]["keyword"] == "YANDEX"
