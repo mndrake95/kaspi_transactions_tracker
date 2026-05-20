@@ -12,7 +12,8 @@ from database.crud import create_transactions, create_upload, update_category, c
 from database.models import Transaction, CategoryRule
 from database.session import Base, engine, get_db
 from parser.kaspi_parser import parse_kaspi_pdf
-from services.transaction_service import group_by_month
+from sqlalchemy import extract
+from services.transaction_service import group_by_month, group_by_category
 
 app = FastAPI()
 
@@ -64,12 +65,19 @@ def get_transactions(
     type: str = None,
     db: Session = Depends(get_db),
 ):
-    txs = [_tx_to_dict(tx) for tx in db.query(Transaction).all()]
+    query = db.query(Transaction)
     if month:
-        txs = [t for t in txs if t["date"].startswith(month)]
+        try:
+            year, mo = month.split("-")
+            query = query.filter(
+                extract("year", Transaction.date) == int(year),
+                extract("month", Transaction.date) == int(mo),
+            )
+        except (ValueError, AttributeError):
+            pass
     if type:
-        txs = [t for t in txs if t["type"] == type]
-    return txs
+        query = query.filter(Transaction.type == type)
+    return [_tx_to_dict(tx) for tx in query.all()]
 
 
 class CategoryUpdate(BaseModel):
@@ -100,7 +108,8 @@ def get_analytics(db: Session = Depends(get_db)):
     for t in txs:
         by_type[t["type"]] = by_type.get(t["type"], 0.0) + t["amount"]
     return {
-        "by_category": by_type,
+        "by_type": by_type,
+        "by_category": group_by_category(txs),
         "by_month": group_by_month(txs),
     }
 

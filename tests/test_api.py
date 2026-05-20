@@ -83,15 +83,22 @@ def test_get_analytics_has_required_keys(client_with_data):
     response = client.get("/analytics")
     assert response.status_code == 200
     data = response.json()
+    assert "by_type" in data
     assert "by_category" in data
     assert "by_month" in data
+
+
+def test_get_analytics_by_type_is_dict_of_floats(client_with_data):
+    client, _ = client_with_data
+    data = client.get("/analytics").json()
+    assert isinstance(data["by_type"], dict)
+    assert all(isinstance(v, float) for v in data["by_type"].values())
 
 
 def test_get_analytics_by_category_is_dict_of_floats(client_with_data):
     client, _ = client_with_data
     data = client.get("/analytics").json()
     assert isinstance(data["by_category"], dict)
-    assert all(isinstance(v, float) for v in data["by_category"].values())
 
 
 def test_get_analytics_by_month_is_dict_of_floats(client_with_data):
