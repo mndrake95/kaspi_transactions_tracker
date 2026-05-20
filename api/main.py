@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -117,3 +118,6 @@ def delete_rule(rule_id: int, db: Session = Depends(get_db)):
     db.delete(rule)
     db.commit()
     return {"deleted": rule_id}
+
+
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaspi PDF Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-4">
+
+  <h1 class="mb-4">Kaspi PDF Tracker</h1>
+
+  <!-- 1. Upload -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Upload Statement</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <input type="file" id="pdf-input" accept=".pdf" class="form-control" style="max-width:300px">
+        <button id="upload-btn" class="btn btn-primary" onclick="handleUpload()">Upload</button>
+      </div>
+      <div id="upload-status" class="mt-2 small"></div>
+    </div>
+  </div>
+
+  <!-- 2. Stats bar -->
+  <div id="stats-section" class="row mb-4" style="display:none">
+    <div class="col-md-4 mb-2">
+      <div class="card text-bg-success">
+        <div class="card-body py-2">
+          <div class="card-subtitle small mb-1">Income</div>
+          <h5 id="stat-income" class="card-title mb-0">—</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-2">
+      <div class="card text-bg-danger">
+        <div class="card-body py-2">
+          <div class="card-subtitle small mb-1">Expenses</div>
+          <h5 id="stat-expenses" class="card-title mb-0">—</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-2">
+      <div class="card text-bg-primary">
+        <div class="card-body py-2">
+          <div class="card-subtitle small mb-1">Balance</div>
+          <h5 id="stat-balance" class="card-title mb-0">—</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Filters -->
+  <div id="filter-section" class="mb-4" style="display:none">
+    <div class="d-flex gap-3 align-items-end flex-wrap">
+      <div>
+        <label class="form-label mb-1 small">Month</label>
+        <select id="month-select" class="form-select form-select-sm" onchange="handleMonthChange()">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label mb-1 small">Type</label>
+        <select id="type-select" class="form-select form-select-sm" onchange="handleTypeChange()">
+          <option value="">All</option>
+          <option>Покупка</option>
+          <option>Пополнение</option>
+          <option>Перевод</option>
+          <option>Снятие</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Charts -->
+  <div id="charts-section" class="mb-4" style="display:none">
+    <div class="row mb-3">
+      <div class="col-md-5">
+        <h6 class="text-muted small text-uppercase">By Type</h6>
+        <canvas id="chart-type-donut"></canvas>
+      </div>
+      <div class="col-md-5 offset-md-1">
+        <h6 class="text-muted small text-uppercase">By Category</h6>
+        <div id="chart-category-placeholder" class="text-muted fst-italic small pt-3">
+          Assign categories to transactions to see this chart
+        </div>
+        <canvas id="chart-category-donut" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <h6 class="text-muted small text-uppercase">Monthly Totals (all time)</h6>
+        <canvas id="chart-monthly-bar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Transaction table -->
+  <div id="table-section" class="mb-4" style="display:none">
+    <div id="table-placeholder" class="text-muted fst-italic small mb-2" style="display:none">
+      No transactions found
+    </div>
+    <table class="table table-striped table-sm align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th class="text-end">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <!-- 6. Rules manager -->
+  <details id="rules-section">
+    <summary class="btn btn-outline-secondary btn-sm mb-2">Category Rules</summary>
+    <div class="card">
+      <div class="card-body">
+        <p class="text-muted small mb-3">Rules apply to transactions on the next PDF upload.</p>
+        <table class="table table-sm mb-3">
+          <thead><tr><th>Keyword</th><th>Category</th><th></th></tr></thead>
+          <tbody id="rules-body"></tbody>
+        </table>
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="text" id="rule-keyword" class="form-control form-control-sm" placeholder="Keyword (e.g. YANDEX)" style="max-width:200px">
+          <select id="rule-category" class="form-select form-select-sm" style="max-width:150px">
+            <option value="">Select category</option>
+            <option>Food</option>
+            <option>Transport</option>
+            <option>Rent</option>
+            <option>Entertainment</option>
+            <option>Health</option>
+            <option>Other</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="handleAddRule()">Add Rule</button>
+        </div>
+        <div id="rules-error" class="text-danger small mt-2"></div>
+      </div>
+    </div>
+  </details>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// JS will go here in subsequent tasks
+</script>
+</body>
+</html>
