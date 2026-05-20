@@ -6,3 +6,4 @@ sample/
 *.pdf
 .pytest_cache/
 docs/
+*.db
