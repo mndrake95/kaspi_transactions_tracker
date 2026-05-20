@@ -109,7 +109,7 @@ def test_get_rules_returns_empty_list(client):
 
 def test_post_rule_creates_rule(client):
     response = client.post("/rules", json={"keyword": "YANDEX", "category": "Transport"})
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert response.json()["keyword"] == "YANDEX"
     assert response.json()["category"] == "Transport"
     assert isinstance(response.json()["id"], int)

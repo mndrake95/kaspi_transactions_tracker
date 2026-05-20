@@ -102,7 +102,7 @@ def get_rules(db: Session = Depends(get_db)):
     return [{"id": r.id, "keyword": r.keyword, "category": r.category} for r in rules]
 
 
-@app.post("/rules")
+@app.post("/rules", status_code=201)
 def post_rule(body: RuleCreate, db: Session = Depends(get_db)):
     rule = create_rule(db, body.keyword, body.category)
     return {"id": rule.id, "keyword": rule.keyword, "category": rule.category}
