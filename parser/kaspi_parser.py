@@ -3,7 +3,8 @@ import pdfplumber
 import re
 from datetime import datetime
 
-pattern = r"(\d{2}\.\d{2}\.\d{2})\s+([+\-])\s+([\d\s]+,\d{2})\s+₸\s+(\S+)\s+(.+)"
+# Groups: (1) date DD.MM.YY  (2) sign +/-  (3) amount "1 234,56"  (4) type  (5) description
+KASPI_LINE_PATTERN = r"(\d{2}\.\d{2}\.\d{2})\s+([+\-])\s+([\d\s]+,\d{2})\s+₸\s+(\S+)\s+(.+)"
 
 
 
@@ -27,7 +28,7 @@ def extract_transaction_lines(lines):
     return transaction_lines
 
 def parse_transaction_line(line):
-    match = re.match(pattern, line)
+    match = re.match(KASPI_LINE_PATTERN, line)
     if match is None:
         return None
     raw_date = match.group(1)

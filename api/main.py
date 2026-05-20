@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from database.crud import create_transactions, create_upload, update_category, create_rule
@@ -20,19 +20,23 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 
-def _tx_to_dict(tx):
-    return {
-        "id": tx.id,
-        "upload_id": tx.upload_id,
-        "date": str(tx.date),
-        "type": tx.type,
-        "description": tx.description,
-        "category": tx.category,
-        "amount": tx.amount,
-    }
+class TransactionOut(BaseModel):
+    model_config = {"from_attributes": True}
+    id: int
+    upload_id: int
+    date: str
+    type: str
+    description: str
+    category: Optional[str]
+    amount: float
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def coerce_date(cls, v):
+        return str(v)
 
 
-@app.post("/upload")
+@app.post("/upload", response_model=list[TransactionOut])
 async def upload_pdf(file: UploadFile, db: Session = Depends(get_db)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
@@ -56,10 +60,10 @@ async def upload_pdf(file: UploadFile, db: Session = Depends(get_db)):
     dates = [datetime.strptime(t["date"], "%Y-%m-%d").date() for t in transactions]
     upload = create_upload(db, file.filename, min(dates), max(dates))
     saved = create_transactions(db, upload.id, transactions)
-    return [_tx_to_dict(tx) for tx in saved]
+    return saved
 
 
-@app.get("/transactions")
+@app.get("/transactions", response_model=list[TransactionOut])
 def get_transactions(
     month: str = None,
     type: str = None,
@@ -77,7 +81,7 @@ def get_transactions(
             pass
     if type:
         query = query.filter(Transaction.type == type)
-    return [_tx_to_dict(tx) for tx in query.all()]
+    return query.all()
 
 
 class CategoryUpdate(BaseModel):
@@ -89,7 +93,7 @@ class RuleCreate(BaseModel):
     category: str
 
 
-@app.patch("/transactions/{transaction_id}")
+@app.patch("/transactions/{transaction_id}", response_model=TransactionOut)
 def patch_transaction(
     transaction_id: int,
     body: CategoryUpdate,
@@ -98,12 +102,23 @@ def patch_transaction(
     tx = update_category(db, transaction_id, body.category)
     if tx is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    return _tx_to_dict(tx)
+    return tx
 
 
 @app.get("/analytics")
 def get_analytics(db: Session = Depends(get_db)):
-    txs = [_tx_to_dict(tx) for tx in db.query(Transaction).all()]
+    txs = [
+        {
+            "id": tx.id,
+            "upload_id": tx.upload_id,
+            "date": str(tx.date),
+            "type": tx.type,
+            "description": tx.description,
+            "category": tx.category,
+            "amount": tx.amount,
+        }
+        for tx in db.query(Transaction).all()
+    ]
     by_type: dict = {}
     for t in txs:
         by_type[t["type"]] = by_type.get(t["type"], 0.0) + t["amount"]
