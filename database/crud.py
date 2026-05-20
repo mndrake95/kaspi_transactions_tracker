@@ -65,6 +65,10 @@ def create_transactions(session, upload_id, transactions):
             category=category,
             amount=t["amount"],
         )
+        if category is not None and tx.category != category:
+            tx.category = category
+            session.commit()
+            session.refresh(tx)
         if tx.id not in seen_ids:
             seen_ids.add(tx.id)
             result.append(tx)

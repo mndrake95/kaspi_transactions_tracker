@@ -107,6 +107,16 @@ def test_create_transactions_deduplication(session):
     assert result2[1].id == result1[1].id
 
 
+def test_rule_applied_to_existing_transaction_on_reupload(session):
+    upload1 = create_upload(session, "test.pdf", datetime.date(2026, 2, 1), datetime.date(2026, 2, 28))
+    create_transactions(session, upload1.id, SAMPLE_TRANSACTIONS)
+    create_rule(session, keyword="YANDEX", category="Transport")
+    upload2 = create_upload(session, "test2.pdf", datetime.date(2026, 2, 1), datetime.date(2026, 2, 28))
+    result = create_transactions(session, upload2.id, SAMPLE_TRANSACTIONS)
+    yandex_tx = next(t for t in result if t.description == "YANDEX.GO")
+    assert yandex_tx.category == "Transport"
+
+
 def test_update_category(session):
     upload = create_upload(session, "test.pdf", datetime.date(2026, 2, 1), datetime.date(2026, 2, 28))
     txs = create_transactions(session, upload.id, SAMPLE_TRANSACTIONS)
