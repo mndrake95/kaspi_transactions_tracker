@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database.crud import create_transactions, create_upload, update_category
-from database.models import Transaction
+from database.models import Transaction, CategoryRule
 from database.session import get_db
 from parser.kaspi_parser import parse_kaspi_pdf
 from services.transaction_service import group_by_month
@@ -89,3 +89,9 @@ def get_analytics(db: Session = Depends(get_db)):
         "by_category": by_type,
         "by_month": group_by_month(txs),
     }
+
+
+@app.get("/rules")
+def get_rules(db: Session = Depends(get_db)):
+    rules = db.query(CategoryRule).all()
+    return [{"id": r.id, "keyword": r.keyword, "category": r.category} for r in rules]

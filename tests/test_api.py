@@ -99,3 +99,9 @@ def test_get_analytics_by_month_is_dict_of_floats(client_with_data):
     data = client.get("/analytics").json()
     assert isinstance(data["by_month"], dict)
     assert all(isinstance(v, float) for v in data["by_month"].values())
+
+
+def test_get_rules_returns_empty_list(client):
+    response = client.get("/rules")
+    assert response.status_code == 200
+    assert response.json() == []
