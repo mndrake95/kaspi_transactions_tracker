@@ -146,7 +146,272 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// JS will go here in subsequent tasks
+const API = 'http://localhost:8000';
+const CATEGORIES = ['Food', 'Transport', 'Rent', 'Entertainment', 'Health', 'Other'];
+
+let allTransactions = [];
+let charts = {};
+
+// --- Helpers ---
+function fmt(n) {
+  return Math.abs(n).toLocaleString('ru-KZ', { maximumFractionDigits: 0 }) + ' ₸';
+}
+
+function showSections() {
+  ['stats-section', 'filter-section', 'charts-section', 'table-section'].forEach(id => {
+    document.getElementById(id).style.display = '';
+  });
+}
+
+// --- Upload ---
+async function handleUpload() {
+  const file = document.getElementById('pdf-input').files[0];
+  if (!file) return;
+  const btn = document.getElementById('upload-btn');
+  const status = document.getElementById('upload-status');
+  btn.disabled = true;
+  status.innerHTML = '<span class="text-muted">Uploading...</span>';
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API}/upload`, { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = await res.json();
+      status.innerHTML = `<span class="text-danger">${err.detail}</span>`;
+      return;
+    }
+    await loadTransactions('');
+    showSections();
+    status.innerHTML = '<span class="text-success">Uploaded successfully</span>';
+  } catch (e) {
+    status.innerHTML = `<span class="text-danger">Upload failed: ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Load ---
+async function loadTransactions(month) {
+  const url = month ? `${API}/transactions?month=${month}` : `${API}/transactions`;
+  const res = await fetch(url);
+  const txs = await res.json();
+  if (!month) allTransactions = txs;
+  render(txs);
+}
+
+function render(txs) {
+  renderStats(txs);
+  renderCharts(txs);
+  renderTable(txs);
+  populateMonthSelector();
+}
+
+// --- Stats ---
+function renderStats(txs) {
+  const income = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0);
+  document.getElementById('stat-income').textContent = fmt(income);
+  document.getElementById('stat-expenses').textContent = fmt(expenses);
+  document.getElementById('stat-balance').textContent = fmt(income + expenses);
+}
+
+// --- Month/Type filters ---
+function populateMonthSelector() {
+  const months = [...new Set(allTransactions.map(t => t.date.slice(0, 7)))].sort().reverse();
+  const sel = document.getElementById('month-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All</option>' +
+    months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+async function handleMonthChange() {
+  document.getElementById('type-select').value = '';
+  const month = document.getElementById('month-select').value;
+  await loadTransactions(month);
+}
+
+function handleTypeChange() {
+  const type = document.getElementById('type-select').value;
+  const month = document.getElementById('month-select').value;
+  let txs = month ? allTransactions.filter(t => t.date.startsWith(month)) : [...allTransactions];
+  if (type) txs = txs.filter(t => t.type === type);
+  render(txs);
+}
+
+// --- Charts ---
+function renderCharts(txs) {
+  renderTypeDonut(txs);
+  renderCategoryDonut(txs);
+  renderMonthlyBar();
+}
+
+function renderTypeDonut(txs) {
+  const groups = {};
+  txs.forEach(t => { groups[t.type] = (groups[t.type] || 0) + Math.abs(t.amount); });
+  const labels = Object.keys(groups);
+  const data = labels.map(l => groups[l]);
+  if (charts.typeDonut) charts.typeDonut.destroy();
+  charts.typeDonut = new Chart(document.getElementById('chart-type-donut'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: ['#4e79a7','#f28e2b','#e15759','#76b7b2'] }] },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+function renderCategoryDonut(txs) {
+  const withCat = txs.filter(t => t.category);
+  const placeholder = document.getElementById('chart-category-placeholder');
+  const canvas = document.getElementById('chart-category-donut');
+  if (!withCat.length) {
+    placeholder.style.display = '';
+    canvas.style.display = 'none';
+    if (charts.catDonut) { charts.catDonut.destroy(); charts.catDonut = null; }
+    return;
+  }
+  placeholder.style.display = 'none';
+  canvas.style.display = '';
+  const groups = {};
+  withCat.forEach(t => { groups[t.category] = (groups[t.category] || 0) + Math.abs(t.amount); });
+  const labels = Object.keys(groups);
+  const data = labels.map(l => groups[l]);
+  if (charts.catDonut) charts.catDonut.destroy();
+  charts.catDonut = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: ['#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'] }] },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+function renderMonthlyBar() {
+  const groups = {};
+  allTransactions.forEach(t => {
+    const m = t.date.slice(0, 7);
+    groups[m] = (groups[m] || 0) + t.amount;
+  });
+  const labels = Object.keys(groups).sort();
+  const data = labels.map(l => groups[l]);
+  const colors = data.map(v => v >= 0 ? 'rgba(89,161,79,0.8)' : 'rgba(225,87,89,0.8)');
+  if (charts.monthBar) charts.monthBar.destroy();
+  charts.monthBar = new Chart(document.getElementById('chart-monthly-bar'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Net (₸)', data, backgroundColor: colors }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: false } }
+    }
+  });
+}
+
+// --- Table ---
+function renderTable(txs) {
+  const placeholder = document.getElementById('table-placeholder');
+  const tbody = document.getElementById('table-body');
+  if (!txs.length) {
+    placeholder.style.display = '';
+    tbody.innerHTML = '';
+    return;
+  }
+  placeholder.style.display = 'none';
+  const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date));
+  tbody.innerHTML = sorted.map(t => `
+    <tr>
+      <td class="text-nowrap">${t.date}</td>
+      <td><span class="badge text-bg-secondary">${t.type}</span></td>
+      <td>${t.description}</td>
+      <td>
+        <select class="form-select form-select-sm"
+                data-id="${t.id}"
+                data-prev="${t.category || ''}"
+                onchange="handleCategoryChange(this)">
+          <option value="">—</option>
+          ${CATEGORIES.map(c => `<option value="${c}" ${t.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td class="text-end text-nowrap fw-semibold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
+        ${t.amount >= 0 ? '+' : ''}${fmt(t.amount)}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function handleCategoryChange(select) {
+  const id = parseInt(select.dataset.id);
+  const prev = select.dataset.prev;
+  const cat = select.value || null;
+  try {
+    const res = await fetch(`${API}/transactions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: cat })
+    });
+    if (!res.ok) throw new Error();
+    select.dataset.prev = select.value;
+    const tx = allTransactions.find(t => t.id === id);
+    if (tx) tx.category = cat;
+    const month = document.getElementById('month-select').value;
+    const type = document.getElementById('type-select').value;
+    let filtered = month ? allTransactions.filter(t => t.date.startsWith(month)) : [...allTransactions];
+    if (type) filtered = filtered.filter(t => t.type === type);
+    renderCategoryDonut(filtered);
+  } catch {
+    select.value = prev;
+  }
+}
+
+// --- Rules ---
+async function loadRules() {
+  try {
+    const res = await fetch(`${API}/rules`);
+    if (!res.ok) throw new Error();
+    renderRules(await res.json());
+  } catch {
+    document.getElementById('rules-error').textContent = 'Could not load rules';
+  }
+}
+
+function renderRules(rules) {
+  document.getElementById('rules-body').innerHTML = rules.length
+    ? rules.map(r => `
+        <tr>
+          <td>${r.keyword}</td>
+          <td>${r.category}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger py-0"
+                    onclick="handleDeleteRule(${r.id}, this)">×</button>
+          </td>
+        </tr>`).join('')
+    : '<tr><td colspan="3" class="text-muted small">No rules yet</td></tr>';
+}
+
+async function handleAddRule() {
+  const keyword = document.getElementById('rule-keyword').value.trim().toUpperCase();
+  const category = document.getElementById('rule-category').value;
+  const errEl = document.getElementById('rules-error');
+  if (!keyword || !category) {
+    errEl.textContent = 'Keyword and category are required';
+    return;
+  }
+  errEl.textContent = '';
+  const res = await fetch(`${API}/rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keyword, category })
+  });
+  if (!res.ok) { errEl.textContent = 'Failed to add rule'; return; }
+  document.getElementById('rule-keyword').value = '';
+  document.getElementById('rule-category').value = '';
+  loadRules();
+}
+
+async function handleDeleteRule(id, btn) {
+  btn.disabled = true;
+  const res = await fetch(`${API}/rules/${id}`, { method: 'DELETE' });
+  if (res.ok) loadRules();
+  else btn.disabled = false;
+}
+
+loadRules();
 </script>
 </body>
 </html>
