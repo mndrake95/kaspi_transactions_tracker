@@ -47,6 +47,7 @@ def create_rule(session, keyword, category):
 
 def create_transactions(session, upload_id, transactions):
     rules = session.query(CategoryRule).all()
+    seen_ids = set()
     result = []
     for t in transactions:
         date = datetime.strptime(t["date"], "%Y-%m-%d").date()
@@ -64,12 +65,16 @@ def create_transactions(session, upload_id, transactions):
             category=category,
             amount=t["amount"],
         )
-        result.append(tx)
+        if tx.id not in seen_ids:
+            seen_ids.add(tx.id)
+            result.append(tx)
     return result
 
 
 def update_category(session, transaction_id, category):
     tx = session.query(Transaction).filter(Transaction.id == transaction_id).first()
+    if tx is None:
+        return None
     tx.category = category
     session.commit()
     session.refresh(tx)
