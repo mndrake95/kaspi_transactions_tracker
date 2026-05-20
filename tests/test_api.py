@@ -125,6 +125,7 @@ def test_delete_rule_removes_it(client):
     rule = client.post("/rules", json={"keyword": "YANDEX", "category": "Transport"}).json()
     response = client.delete(f"/rules/{rule['id']}")
     assert response.status_code == 200
+    assert response.json() == {"deleted": rule["id"]}
     assert client.get("/rules").json() == []
 
 def test_delete_rule_not_found_returns_404(client):
