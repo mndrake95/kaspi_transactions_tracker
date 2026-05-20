@@ -64,10 +64,6 @@
         <label class="form-label mb-1 small">Type</label>
         <select id="type-select" class="form-select form-select-sm" onchange="handleTypeChange()">
           <option value="">All</option>
-          <option>Покупка</option>
-          <option>Пополнение</option>
-          <option>Перевод</option>
-          <option>Снятие</option>
         </select>
       </div>
     </div>
@@ -146,7 +142,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const API = 'http://localhost:8000';
+const API = '';
 const CATEGORIES = ['Food', 'Transport', 'Rent', 'Entertainment', 'Health', 'Other'];
 
 let allTransactions = [];
@@ -213,7 +209,7 @@ function render(txs) {
   renderStats(txs);
   renderCharts(txs);
   renderTable(txs);
-  populateMonthSelector();
+  populateSelectors();
 }
 
 // --- Stats ---
@@ -226,13 +222,22 @@ function renderStats(txs) {
 }
 
 // --- Month/Type filters ---
-function populateMonthSelector() {
+function populateSelectors() {
+  // months
   const months = [...new Set(allTransactions.map(t => t.date.slice(0, 7)))].sort().reverse();
-  const sel = document.getElementById('month-select');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">All</option>' +
+  const mSel = document.getElementById('month-select');
+  const curMonth = mSel.value;
+  mSel.innerHTML = '<option value="">All</option>' +
     months.map(m => `<option value="${m}">${m}</option>`).join('');
-  if (current) sel.value = current;
+  if (curMonth) mSel.value = curMonth;
+
+  // types
+  const types = [...new Set(allTransactions.map(t => t.type))].sort();
+  const tSel = document.getElementById('type-select');
+  const curType = tSel.value;
+  tSel.innerHTML = '<option value="">All</option>' +
+    types.map(t => `<option value="${t}">${t}</option>`).join('');
+  if (curType) tSel.value = curType;
 }
 
 async function handleMonthChange() {
@@ -366,6 +371,11 @@ async function handleCategoryChange(select) {
     renderCategoryDonut(filtered);
   } catch {
     select.value = prev;
+    const err = document.createElement('span');
+    err.className = 'text-danger small ms-1';
+    err.textContent = 'Save failed';
+    select.after(err);
+    setTimeout(() => err.remove(), 3000);
   }
 }
 
