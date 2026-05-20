@@ -131,3 +131,18 @@ def test_delete_rule_removes_it(client):
 def test_delete_rule_not_found_returns_404(client):
     response = client.delete("/rules/999999")
     assert response.status_code == 404
+
+
+def test_upload_invalid_pdf_returns_400(client):
+    import io
+    data = io.BytesIO(b"not a pdf")
+    response = client.post("/upload", files={"file": ("fake.pdf", data, "application/pdf")})
+    assert response.status_code == 400
+
+
+def test_upload_non_pdf_content_type_returns_400(client):
+    import io
+    data = io.BytesIO(b"some text content")
+    response = client.post("/upload", files={"file": ("report.txt", data, "text/plain")})
+    assert response.status_code == 400
+    assert "PDF" in response.json()["detail"]

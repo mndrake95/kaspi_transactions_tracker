@@ -33,6 +33,9 @@ def _tx_to_dict(tx):
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile, db: Session = Depends(get_db)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
@@ -41,6 +44,8 @@ async def upload_pdf(file: UploadFile, db: Session = Depends(get_db)):
         transactions = parse_kaspi_pdf(tmp_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not parse PDF")
     finally:
         os.unlink(tmp_path)
 
