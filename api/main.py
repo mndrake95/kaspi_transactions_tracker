@@ -10,11 +10,13 @@ from sqlalchemy.orm import Session
 
 from database.crud import create_transactions, create_upload, update_category, create_rule
 from database.models import Transaction, CategoryRule
-from database.session import get_db
+from database.session import Base, engine, get_db
 from parser.kaspi_parser import parse_kaspi_pdf
 from services.transaction_service import group_by_month
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 
 def _tx_to_dict(tx):

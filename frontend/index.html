@@ -180,8 +180,9 @@ async function handleUpload() {
     form.append('file', file);
     const res = await fetch(`${API}/upload`, { method: 'POST', body: form });
     if (!res.ok) {
-      const err = await res.json();
-      status.innerHTML = `<span class="text-danger">${err.detail}</span>`;
+      let detail = 'Upload failed';
+      try { detail = (await res.json()).detail || detail; } catch {}
+      status.innerHTML = `<span class="text-danger">${esc(detail)}</span>`;
       return;
     }
     await loadTransactions('');
