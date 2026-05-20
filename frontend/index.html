@@ -157,6 +157,10 @@ function fmt(n) {
   return Math.abs(n).toLocaleString('ru-KZ', { maximumFractionDigits: 0 }) + ' ₸';
 }
 
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function showSections() {
   ['stats-section', 'filter-section', 'charts-section', 'table-section'].forEach(id => {
     document.getElementById(id).style.display = '';
@@ -193,10 +197,15 @@ async function handleUpload() {
 // --- Load ---
 async function loadTransactions(month) {
   const url = month ? `${API}/transactions?month=${month}` : `${API}/transactions`;
-  const res = await fetch(url);
-  const txs = await res.json();
-  if (!month) allTransactions = txs;
-  render(txs);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to load transactions');
+    const txs = await res.json();
+    if (!month) allTransactions = txs;
+    render(txs);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function render(txs) {
@@ -316,9 +325,9 @@ function renderTable(txs) {
   const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date));
   tbody.innerHTML = sorted.map(t => `
     <tr>
-      <td class="text-nowrap">${t.date}</td>
-      <td><span class="badge text-bg-secondary">${t.type}</span></td>
-      <td>${t.description}</td>
+      <td class="text-nowrap">${esc(t.date)}</td>
+      <td><span class="badge text-bg-secondary">${esc(t.type)}</span></td>
+      <td>${esc(t.description)}</td>
       <td>
         <select class="form-select form-select-sm"
                 data-id="${t.id}"
@@ -374,8 +383,8 @@ function renderRules(rules) {
   document.getElementById('rules-body').innerHTML = rules.length
     ? rules.map(r => `
         <tr>
-          <td>${r.keyword}</td>
-          <td>${r.category}</td>
+          <td>${esc(r.keyword)}</td>
+          <td>${esc(r.category)}</td>
           <td>
             <button class="btn btn-sm btn-outline-danger py-0"
                     onclick="handleDeleteRule(${r.id}, this)">×</button>
@@ -393,22 +402,30 @@ async function handleAddRule() {
     return;
   }
   errEl.textContent = '';
-  const res = await fetch(`${API}/rules`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keyword, category })
-  });
-  if (!res.ok) { errEl.textContent = 'Failed to add rule'; return; }
-  document.getElementById('rule-keyword').value = '';
-  document.getElementById('rule-category').value = '';
-  loadRules();
+  try {
+    const res = await fetch(`${API}/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword, category })
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('rule-keyword').value = '';
+    document.getElementById('rule-category').value = '';
+    loadRules();
+  } catch {
+    errEl.textContent = 'Failed to add rule';
+  }
 }
 
 async function handleDeleteRule(id, btn) {
   btn.disabled = true;
-  const res = await fetch(`${API}/rules/${id}`, { method: 'DELETE' });
-  if (res.ok) loadRules();
-  else btn.disabled = false;
+  try {
+    const res = await fetch(`${API}/rules/${id}`, { method: 'DELETE' });
+    if (res.ok) loadRules();
+    else btn.disabled = false;
+  } catch {
+    btn.disabled = false;
+  }
 }
 
 loadRules();
