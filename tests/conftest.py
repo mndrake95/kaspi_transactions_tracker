@@ -15,7 +15,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 engine_test = create_engine(TEST_DATABASE_URL,
                                   connect_args = {"check_same_thread": False},
                                   poolclass = StaticPool,
-                                  echo = True
+                                  echo = False
                                   )
 
 TestingSessionLocal = sessionmaker(bind=engine_test, expire_on_commit=False)

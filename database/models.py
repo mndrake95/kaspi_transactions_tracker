@@ -11,6 +11,7 @@ class Upload(Base):
     period_start: Mapped[Date] = mapped_column(Date)
     period_end: Mapped[Date] = mapped_column(Date)
     uploaded_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    transactions: Mapped[list["Transaction"]] = relationship("Transaction", cascade="all, delete-orphan")
 
 class Transaction(Base):
     __tablename__ = "transactions"

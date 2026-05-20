@@ -130,3 +130,13 @@ def test_insert_transaction_same_day_amount_different_type_both_saved(session):
     tx1 = insert_transaction(session, upload.id, datetime.date(2026, 2, 10), "Покупка", "BURGER KING", None, -500.0)
     tx2 = insert_transaction(session, upload.id, datetime.date(2026, 2, 10), "Перевод", "BURGER KING", None, -500.0)
     assert tx1.id != tx2.id
+
+
+def test_delete_upload_cascades_to_transactions(session):
+    from database.models import Upload
+    upload = create_upload(session, "test.pdf", datetime.date(2026, 2, 1), datetime.date(2026, 2, 28))
+    create_transactions(session, upload.id, SAMPLE_TRANSACTIONS)
+    assert session.query(Transaction).count() == 2
+    session.delete(session.get(Upload, upload.id))
+    session.commit()
+    assert session.query(Transaction).count() == 0
