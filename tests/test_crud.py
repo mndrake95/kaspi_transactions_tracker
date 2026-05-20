@@ -123,3 +123,10 @@ def test_update_category(session):
     updated = update_category(session, txs[0].id, "Food")
     assert updated.id == txs[0].id
     assert updated.category == "Food"
+
+
+def test_insert_transaction_same_day_amount_different_type_both_saved(session):
+    upload = create_upload(session, "test.pdf", datetime.date(2026, 2, 1), datetime.date(2026, 2, 28))
+    tx1 = insert_transaction(session, upload.id, datetime.date(2026, 2, 10), "Покупка", "BURGER KING", None, -500.0)
+    tx2 = insert_transaction(session, upload.id, datetime.date(2026, 2, 10), "Перевод", "BURGER KING", None, -500.0)
+    assert tx1.id != tx2.id

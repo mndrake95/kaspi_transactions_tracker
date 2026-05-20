@@ -8,33 +8,24 @@ def create_upload(session, filename, period_start, period_end):
     session.refresh(new_upload)
     return new_upload
 
-def insert_transaction(session, 
-                       upload_id, 
-                       date, 
-                       type, 
-                       description, 
-                       category, 
-                       amount
-                       ):
-    query = session.query(Transaction).filter(Transaction.date == date, 
-                                              Transaction.description == description, 
-                                              Transaction.amount == amount)
+def insert_transaction(session, upload_id, date, type, description, category, amount):
+    query = session.query(Transaction).filter(
+        Transaction.date == date,
+        Transaction.description == description,
+        Transaction.amount == amount,
+        Transaction.type == type,
+    )
     existing = query.first()
-
     if existing:
         return existing
-    
-    else:
-        new_transaction = Transaction(upload_id=upload_id,
-                                  date=date,
-                                  type=type,
-                                  description=description,
-                                  category=category,
-                                  amount=amount)
-        session.add(new_transaction)
-        session.commit()
-        session.refresh(new_transaction)
-        return new_transaction
+    new_transaction = Transaction(
+        upload_id=upload_id, date=date, type=type,
+        description=description, category=category, amount=amount
+    )
+    session.add(new_transaction)
+    session.flush()
+    session.refresh(new_transaction)
+    return new_transaction
 
 
 def create_rule(session, keyword, category):
@@ -57,21 +48,18 @@ def create_transactions(session, upload_id, transactions):
                 category = rule.category
                 break
         tx = insert_transaction(
-            session,
-            upload_id=upload_id,
-            date=date,
-            type=t["category"],
-            description=t["description"],
-            category=category,
-            amount=t["amount"],
+            session, upload_id=upload_id, date=date,
+            type=t["category"], description=t["description"],
+            category=category, amount=t["amount"],
         )
         if category is not None and tx.category != category:
             tx.category = category
-            session.commit()
-            session.refresh(tx)
         if tx.id not in seen_ids:
             seen_ids.add(tx.id)
             result.append(tx)
+    session.commit()
+    for tx in result:
+        session.refresh(tx)
     return result
 
 
