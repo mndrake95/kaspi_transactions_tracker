@@ -1,6 +1,7 @@
 import os
 import tempfile
 from datetime import datetime
+from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -64,7 +65,7 @@ def get_transactions(
 
 
 class CategoryUpdate(BaseModel):
-    category: str
+    category: Optional[str] = None
 
 
 class RuleCreate(BaseModel):
@@ -106,3 +107,13 @@ def get_rules(db: Session = Depends(get_db)):
 def post_rule(body: RuleCreate, db: Session = Depends(get_db)):
     rule = create_rule(db, body.keyword, body.category)
     return {"id": rule.id, "keyword": rule.keyword, "category": rule.category}
+
+
+@app.delete("/rules/{rule_id}")
+def delete_rule(rule_id: int, db: Session = Depends(get_db)):
+    rule = db.query(CategoryRule).filter(CategoryRule.id == rule_id).first()
+    if rule is None:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    db.delete(rule)
+    db.commit()
+    return {"deleted": rule_id}

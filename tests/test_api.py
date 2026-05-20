@@ -119,3 +119,14 @@ def test_get_rules_returns_created_rules(client):
     response = client.get("/rules")
     assert len(response.json()) == 1
     assert response.json()[0]["keyword"] == "YANDEX"
+
+
+def test_delete_rule_removes_it(client):
+    rule = client.post("/rules", json={"keyword": "YANDEX", "category": "Transport"}).json()
+    response = client.delete(f"/rules/{rule['id']}")
+    assert response.status_code == 200
+    assert client.get("/rules").json() == []
+
+def test_delete_rule_not_found_returns_404(client):
+    response = client.delete("/rules/999999")
+    assert response.status_code == 404
