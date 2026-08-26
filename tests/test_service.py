@@ -1,11 +1,13 @@
+from datetime import date
+
 import pytest
 from services.transaction_service import (
-    filter_by_month,
-    filter_by_category,
     calculate_total,
+    filter_transactions,
     group_by_category,
     group_by_month,
 )
+from database.models import Upload, Transaction
 
 TRANSACTIONS = [
     {"date": "2024-01-15", "description": "Burger King", "category": "Покупка", "amount": -1500.0},
@@ -15,38 +17,54 @@ TRANSACTIONS = [
 ]
 
 
-def test_filter_by_month_returns_january_only():
-    result = filter_by_month(TRANSACTIONS, "2024-01")
+@pytest.fixture
+def seeded_transactions(session):
+    upload = Upload(filename="test.pdf", period_start=date(2024, 1, 1), period_end=date(2024, 2, 28))
+    session.add(upload)
+    session.commit()
+    session.refresh(upload)
+
+    txs = [
+        Transaction(upload_id=upload.id, date=date(2024, 1, 15), type="Покупка", description="Burger King", amount=-1500.0),
+        Transaction(upload_id=upload.id, date=date(2024, 1, 20), type="Покупка", description="Yandex Go", amount=-500.0),
+        Transaction(upload_id=upload.id, date=date(2024, 2, 5), type="Пополнение", description="Salary", amount=5000.0),
+        Transaction(upload_id=upload.id, date=date(2024, 2, 10), type="Покупка", description="Magnum", amount=-2000.0),
+    ]
+    session.add_all(txs)
+    session.commit()
+    return txs
+
+
+def test_filter_transactions_no_filters_returns_all(session, seeded_transactions):
+    result = filter_transactions(session)
+    assert len(result) == 4
+
+
+def test_filter_transactions_by_month_returns_january_only(session, seeded_transactions):
+    result = filter_transactions(session, month="2024-01")
     assert len(result) == 2
-    assert all(t["date"].startswith("2024-01") for t in result)
+    assert all(t.date.strftime("%Y-%m") == "2024-01" for t in result)
 
 
-def test_filter_by_month_returns_february_only():
-    result = filter_by_month(TRANSACTIONS, "2024-02")
-    assert len(result) == 2
-    assert all(t["date"].startswith("2024-02") for t in result)
-
-
-def test_filter_by_month_returns_empty_for_missing_month():
-    result = filter_by_month(TRANSACTIONS, "2025-01")
+def test_filter_transactions_by_month_returns_empty_for_missing_month(session, seeded_transactions):
+    result = filter_transactions(session, month="2025-01")
     assert result == []
 
 
-def test_filter_by_category_returns_pokupka():
-    result = filter_by_category(TRANSACTIONS, "Покупка")
-    assert len(result) == 3
-    assert all(t["category"] == "Покупка" for t in result)
-
-
-def test_filter_by_category_returns_popolnenie():
-    result = filter_by_category(TRANSACTIONS, "Пополнение")
+def test_filter_transactions_by_type_returns_popolnenie(session, seeded_transactions):
+    result = filter_transactions(session, type="Пополнение")
     assert len(result) == 1
-    assert result[0]["description"] == "Salary"
+    assert result[0].description == "Salary"
 
 
-def test_filter_by_category_returns_empty_for_missing_category():
-    result = filter_by_category(TRANSACTIONS, "NonExistent")
-    assert result == []
+def test_filter_transactions_by_month_and_type_combined(session, seeded_transactions):
+    result = filter_transactions(session, month="2024-01", type="Покупка")
+    assert len(result) == 2
+
+
+def test_filter_transactions_invalid_month_format_ignored(session, seeded_transactions):
+    result = filter_transactions(session, month="not-a-month")
+    assert len(result) == 4
 
 
 def test_calculate_total_sums_all_amounts():

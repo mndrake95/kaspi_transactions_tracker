@@ -86,6 +86,36 @@ def test_get_analytics_has_required_keys(client_with_data):
     assert "by_type" in data
     assert "by_category" in data
     assert "by_month" in data
+    assert "total" in data
+
+
+def test_get_analytics_total_is_float(client_with_data):
+    client, _ = client_with_data
+    data = client.get("/analytics").json()
+    assert isinstance(data["total"], float)
+
+
+def test_get_analytics_total_equals_sum_of_by_type(client_with_data):
+    client, _ = client_with_data
+    data = client.get("/analytics").json()
+    assert data["total"] == pytest.approx(sum(data["by_type"].values()))
+
+
+def test_get_analytics_filters_by_month(client_with_data):
+    client, uploaded = client_with_data
+    month = uploaded[0]["date"][:7]
+    data = client.get(f"/analytics?month={month}").json()
+    expected = sum(t["amount"] for t in uploaded if t["date"].startswith(month))
+    assert data["total"] == pytest.approx(expected)
+
+
+def test_get_analytics_filters_by_type(client_with_data):
+    client, uploaded = client_with_data
+    tx_type = uploaded[0]["type"]
+    data = client.get(f"/analytics?type={tx_type}").json()
+    expected = sum(t["amount"] for t in uploaded if t["type"] == tx_type)
+    assert data["total"] == pytest.approx(expected)
+    assert set(data["by_type"].keys()) == {tx_type}
 
 
 def test_get_analytics_by_type_is_dict_of_floats(client_with_data):

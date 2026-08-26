@@ -142,10 +142,11 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const API = '/kaspi';
+const API = '';
 const CATEGORIES = ['Food', 'Transport', 'Rent', 'Entertainment', 'Health', 'Other'];
 
 let allTransactions = [];
+let allTimeAnalytics = null;
 let charts = {};
 
 // --- Helpers ---
@@ -198,11 +199,20 @@ async function loadTransactions(month) {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to load transactions');
     const txs = await res.json();
-    if (!month) allTransactions = txs;
+    if (!month) {
+      allTransactions = txs;
+      allTimeAnalytics = await loadAnalytics();
+    }
     render(txs);
   } catch (e) {
     console.error(e);
   }
+}
+
+async function loadAnalytics() {
+  const res = await fetch(`${API}/analytics`);
+  if (!res.ok) throw new Error('Failed to load analytics');
+  return res.json();
 }
 
 function render(txs) {
@@ -299,11 +309,7 @@ function renderCategoryDonut(txs) {
 }
 
 function renderMonthlyBar() {
-  const groups = {};
-  allTransactions.forEach(t => {
-    const m = t.date.slice(0, 7);
-    groups[m] = (groups[m] || 0) + t.amount;
-  });
+  const groups = allTimeAnalytics ? allTimeAnalytics.by_month : {};
   const labels = Object.keys(groups).sort();
   const data = labels.map(l => groups[l]);
   const colors = data.map(v => v >= 0 ? 'rgba(89,161,79,0.8)' : 'rgba(225,87,89,0.8)');

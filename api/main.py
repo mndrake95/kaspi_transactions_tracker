@@ -12,8 +12,7 @@ from database.crud import create_transactions, create_upload, update_category, c
 from database.models import Transaction, CategoryRule
 from database.session import Base, engine, get_db
 from parser.kaspi_parser import parse_kaspi_pdf
-from sqlalchemy import extract
-from services.transaction_service import group_by_month, group_by_category
+from services.transaction_service import group_by_month, group_by_category, filter_transactions, calculate_total
 
 app = FastAPI()
 
@@ -69,19 +68,7 @@ def get_transactions(
     type: str = None,
     db: Session = Depends(get_db),
 ):
-    query = db.query(Transaction)
-    if month:
-        try:
-            year, mo = month.split("-")
-            query = query.filter(
-                extract("year", Transaction.date) == int(year),
-                extract("month", Transaction.date) == int(mo),
-            )
-        except (ValueError, AttributeError):
-            pass
-    if type:
-        query = query.filter(Transaction.type == type)
-    return query.all()
+    return filter_transactions(db, month=month, type=type)
 
 
 class CategoryUpdate(BaseModel):
@@ -106,7 +93,7 @@ def patch_transaction(
 
 
 @app.get("/analytics")
-def get_analytics(db: Session = Depends(get_db)):
+def get_analytics(month: str = None, type: str = None, db: Session = Depends(get_db)):
     txs = [
         {
             "id": tx.id,
@@ -117,7 +104,7 @@ def get_analytics(db: Session = Depends(get_db)):
             "category": tx.category,
             "amount": tx.amount,
         }
-        for tx in db.query(Transaction).all()
+        for tx in filter_transactions(db, month=month, type=type)
     ]
     by_type: dict = {}
     for t in txs:
@@ -126,6 +113,7 @@ def get_analytics(db: Session = Depends(get_db)):
         "by_type": by_type,
         "by_category": group_by_category(txs),
         "by_month": group_by_month(txs),
+        "total": calculate_total(txs),
     }
 
 

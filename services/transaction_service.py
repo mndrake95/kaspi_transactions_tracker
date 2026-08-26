@@ -1,9 +1,23 @@
-def filter_by_month(transactions, month):
-    return [t for t in transactions if t["date"].startswith(month)]
+from sqlalchemy import extract
+from sqlalchemy.orm import Session
+
+from database.models import Transaction
 
 
-def filter_by_category(transactions, category):
-    return [t for t in transactions if t["category"] == category]
+def filter_transactions(db: Session, month: str = None, type: str = None):
+    query = db.query(Transaction)
+    if month:
+        try:
+            year, mo = month.split("-")
+            query = query.filter(
+                extract("year", Transaction.date) == int(year),
+                extract("month", Transaction.date) == int(mo),
+            )
+        except (ValueError, AttributeError):
+            pass
+    if type:
+        query = query.filter(Transaction.type == type)
+    return query.all()
 
 
 def calculate_total(transactions):
