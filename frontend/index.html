@@ -204,9 +204,17 @@ async function loadTransactions(month) {
       allTimeAnalytics = await loadAnalytics();
     }
     render(txs);
+    return txs;
   } catch (e) {
     console.error(e);
+    return [];
   }
+}
+
+async function init() {
+  loadRules();
+  const txs = await loadTransactions('');
+  if (txs.length > 0) showSections();
 }
 
 async function loadAnalytics() {
@@ -445,7 +453,7 @@ async function handleDeleteRule(id, btn) {
   }
 }
 
-loadRules();
+init();
 </script>
 </body>
 </html>
