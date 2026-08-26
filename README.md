@@ -4,8 +4,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red?logo=sqlalchemy&logoColor=white)
+![Tests](https://github.com/mndrake95/kaspi_transactions_tracker/actions/workflows/tests.yml/badge.svg)
 
 ---
 
@@ -23,43 +23,23 @@
 ## Стек
 
 - **Backend** — FastAPI + SQLAlchemy
-- **База данных** — PostgreSQL
+- **База данных** — SQLite (локально) / PostgreSQL (через `DATABASE_URL`)
 - **Frontend** — Bootstrap 5 + Chart.js (CDN, без сборки)
-- **Деплой** — Docker Compose + nginx
 
 ---
 
-## Запуск через Docker
+## Запуск
 
 ```bash
 git clone https://github.com/mndrake95/kaspi_transactions_tracker.git
 cd kaspi_transactions_tracker
 
-cp .env.example .env
-# Задать POSTGRES_PASSWORD в .env
-
-docker compose up -d
-```
-
-Приложение будет доступно на `http://localhost`.
-
----
-
-## Локальная разработка
-
-```bash
-# Создать виртуальное окружение
 python -m venv .venv
 .venv\Scripts\activate        # Windows
 source .venv/bin/activate     # Linux / Mac
 
 pip install -r requirements.txt
-```
-
-Создать `.env`:
-
-```env
-DATABASE_URL=sqlite:///./kaspi_tracker.db
+cp .env.example .env
 ```
 
 Запустить тесты и сервер:
@@ -68,6 +48,8 @@ DATABASE_URL=sqlite:///./kaspi_tracker.db
 pytest
 uvicorn api.main:app --reload
 ```
+
+Приложение будет доступно на `http://localhost:8000`.
 
 ---
 
@@ -79,7 +61,5 @@ uvicorn api.main:app --reload
 ├── parser/       # Парсер PDF выписок
 ├── services/     # Бизнес-логика (аналитика)
 ├── frontend/     # HTML + JS (один файл)
-├── tests/        # Pytest тесты
-├── nginx/        # Конфиг nginx
-└── docker-compose.yml
+└── tests/        # Pytest тесты
 ```
