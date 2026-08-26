@@ -2,8 +2,9 @@
 .env
 __pycache__/
 *.pyc
-sample/
+sample/*
 *.pdf
+!sample/kaspi_test_statement.pdf
 .pytest_cache/
 docs/
 *.db

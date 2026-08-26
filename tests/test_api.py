@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 
-SAMPLE_PDF = Path(__file__).parent.parent / "sample" / "gold_statement.pdf"
+SAMPLE_PDF = Path(__file__).parent.parent / "sample" / "kaspi_test_statement.pdf"
 
 
 @pytest.fixture

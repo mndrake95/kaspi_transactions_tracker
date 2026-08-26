@@ -3,7 +3,7 @@ from pathlib import Path
 from parser.kaspi_parser import parse_kaspi_pdf, parse_date, parse_transaction_line, extract_pages, filter_transaction_lines, parse_amount
 import re
 
-SAMPLE_PDF = Path(__file__).parent.parent/"sample"/"gold_statement.pdf"
+SAMPLE_PDF = Path(__file__).parent.parent/"sample"/"kaspi_test_statement.pdf"
 
 def test_parse_returns_transactions():
     result = parse_kaspi_pdf(SAMPLE_PDF)
